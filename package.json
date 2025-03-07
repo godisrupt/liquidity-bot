@@ -1,0 +1,27 @@
+{
+  "name": "solana-volume-trading-bot",
+  "version": "1.0.0",
+  "description": "Automated volume trading bot for Solana tokens using Jupiter Exchange",
+  "main": "trade-bot.js",
+  "type": "module",
+  "scripts": {
+    "start": "node trade-bot.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "solana",
+    "trading",
+    "bot",
+    "jupiter",
+    "volume",
+    "crypto"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@solana/web3.js": "^1.78.0",
+    "axios": "^1.4.0",
+    "bs58": "^5.0.0",
+    "dotenv": "^16.3.1"
+  }
+} 
