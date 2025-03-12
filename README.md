@@ -2,7 +2,7 @@
 
 > An automated volume trading bot for Solana tokens using Jupiter Exchange.
 > 
-> Created by [@go_disrupt](https://twitter.com/go_disrupt)
+> Created by [@go_disrupt](https://twitter.com/go_disrupt) | Tips & Donation : godisrupt.sol
 
 ## ✨ Features
 
@@ -41,55 +41,17 @@
 
 ## 🔑 Private Key Management
 
-The bot requires a Solana private key in base58 format. Two utility scripts make this easy:
-
-### 🆕 Option 1: Generate a New Wallet
-
-```bash
-# Using npm
-npm run generate-wallet
-
-# OR directly
-node generate-wallet.js
-```
-
-This will:
-1. ✨ Generate a new Solana keypair
-2. 🔄 Convert the private key to base58 format
-3. 📝 Display the information in the terminal
-4. 💾 Save the information to `wallet-info.json`
-
-Add the generated base58 private key to your `.env` file:
+The bot requires a Solana private key in base58 format. Simply export your private key from your wallet and add it to the `.env` file:
 
 ```
-WALLET_PRIVATE_KEY=your_generated_base58_private_key
+WALLET_PRIVATE_KEY=your_wallet_private_key
 ```
 
 > ⚠️ **Important**: Make sure this wallet has enough SOL to cover transaction fees.
 
-### 🔄 Option 2: Convert an Existing Key
-
-If you already have a Solana private key in another format (array, hex, base64):
-
-```bash
-# Using npm
-npm run convert-key "your-existing-private-key"
-
-# OR directly
-node convert-key.js "your-existing-private-key"
-```
-
-This will:
-1. 🔍 Automatically detect your key's format
-2. 🔄 Convert it to the required base58 format
-3. 📝 Display the information in the terminal
-
 ### 🗝️ Supported Key Formats
 
 - **Base58** (Solana standard): base58-encoded string
-- **Array**: Array of 64 integers separated by commas
-- **Hex**: 128-character hexadecimal string
-- **Base64**: base64-encoded string
 
 ## ⚙️ Configuration
 
@@ -167,7 +129,7 @@ If you find this bot useful, please consider giving it a star on GitHub!
 
 ## 🔗 Let's Connect
 
-Follow me on X: [@go_disrupt](https://twitter.com/go_disrupt)
+Follow me on X: [@go_disrupt](https://twitter.com/go_disrupt) | Tips & Donation : godisrupt.sol
 
 ## ⚠️ Disclaimer
 
