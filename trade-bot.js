@@ -12,13 +12,13 @@ dotenv.config();
 const SOLANA_RPC = process.env.RPC_ENDPOINT || 'https://api.mainnet-beta.solana.com';
 const SOL_MINT = 'So11111111111111111111111111111111111111112';
 const TOKEN_MINT = process.env.TOKEN_MINT || ''; // Token specified in .env
-const TRADE_AMOUNT_USD = Number(process.env.TRADE_AMOUNT_USD || 6); // Fixed USD amount for each trade
-const TRADE_INTERVAL_MS = Number(process.env.TRADE_INTERVAL || 60000); // 1 minute in milliseconds
+const TRADE_AMOUNT_USD = Number(process.env.TRADE_AMOUNT_USD || 1); // Fixed USD amount for each trade
+const TRADE_INTERVAL_MS = Number(process.env.TRADE_INTERVAL || 20000); // 1 minute in milliseconds
 const SLIPPAGE_BPS = parseInt(process.env.SLIPPAGE_BPS || '100'); // 1%
-const PRIORITY_FEE = parseInt(process.env.PRIORITY_FEE || '2000000');
+const PRIORITY_FEE = parseInt(process.env.PRIORITY_FEE || '1000000');
 const JUPITER_API_BASE = 'https://quote-api.jup.ag/v6';
 const COINGECKO_API = 'https://api.coingecko.com/api/v3';
-const MIN_SOL_BALANCE = Number(process.env.MIN_SOL_BALANCE || 0.02); // Minimum required SOL balance
+const MIN_SOL_BALANCE = Number(process.env.MIN_SOL_BALANCE || 0.005); // Minimum required SOL balance
 
 // Log file
 const LOG_FILE = 'trading.log';
