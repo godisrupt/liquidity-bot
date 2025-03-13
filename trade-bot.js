@@ -33,7 +33,6 @@ let totalVolumeUSD = 0;
 let startTime = new Date();
 let solPriceUSD = 0; // Current SOL price in USD
 let lastPurchasedTokenAmount = 0; // Amount of tokens purchased in the last buy
-let lastTradeAmountUSD = 0; // Track the exact USD amount used in the last trade
 
 // Logger function
 function log(message, type = 'info') {
@@ -169,8 +168,8 @@ async function executeSwap(fromMint, toMint, amountUSD, slippageBps = SLIPPAGE_B
       inputAmountStr = Math.floor(inputAmount * 1000000).toString(); // Conversion to minimum units (assuming 6 decimals)
       log(`Using token amount: ${inputAmount} tokens (${inputAmountStr} minimum units)`, 'info');
     } else {
-      // For a purchase with SOL, calculate the SOL amount equivalent to the requested USD value
-      amountSOL = inputAmount !== null ? inputAmount : await calculateTradeAmountSOL();
+      // For both buy and sell, calculate the amount based on USD value
+      amountSOL = amountUSD / solPriceUSD;
       amountLamports = Math.floor(amountSOL * LAMPORTS_PER_SOL);
       inputAmountStr = amountLamports.toString();
     }
@@ -183,7 +182,7 @@ async function executeSwap(fromMint, toMint, amountUSD, slippageBps = SLIPPAGE_B
     if (isTokenAmount && inputAmount !== null) {
       log(`Amount: ${inputAmount} tokens`);
     } else {
-      log(`Amount: ${amountSOL.toFixed(5)} SOL ${amountUSD ? `($${amountUSD})` : ''}`);
+      log(`Amount: ${amountSOL.toFixed(5)} SOL ($${amountUSD})`);
     }
     
     // 1. Get a quote
@@ -212,10 +211,6 @@ async function executeSwap(fromMint, toMint, amountUSD, slippageBps = SLIPPAGE_B
     if (isBuying) {
       lastPurchasedTokenAmount = outAmount;
       log(`Tokens to receive: ${lastPurchasedTokenAmount}`, 'info');
-      
-      // Store the exact USD amount used for this purchase
-      lastTradeAmountUSD = amountUSD || (amountSOL * solPriceUSD);
-      log(`USD amount for this purchase: $${lastTradeAmountUSD.toFixed(2)}`, 'info');
     }
     
     // 2. Create a swap transaction
@@ -326,91 +321,40 @@ async function performTradeCycle() {
       return false;
     }
     
-    // Calculate trade amount in SOL based on the TRADE_AMOUNT_USD value
-    const tradeAmountSOL = await calculateTradeAmountSOL();
-    
-    // Adjust transaction amount if necessary for SOL balance
-    let adjustedTradeAmountUSD = TRADE_AMOUNT_USD;
-    let adjustedTradeAmountSOL = tradeAmountSOL;
-    
-    // If the balance is low but above the minimum, adjust the amount for buys
-    if (isBuying && solBalance < tradeAmountSOL + 0.005) {
-      adjustedTradeAmountSOL = solBalance - 0.005; // Keep 0.005 SOL for fees
-      adjustedTradeAmountUSD = adjustedTradeAmountSOL * solPriceUSD;
-      log(`Adjusting transaction amount: $${adjustedTradeAmountUSD.toFixed(2)} (${adjustedTradeAmountSOL.toFixed(5)} SOL)`, 'warning');
-    }
-    
     if (isBuying) {
       // Buy: SOL -> TOKEN
+      // Calculate SOL amount needed for the transaction
+      const tradeAmountSOL = await calculateTradeAmountSOL();
+      
+      // Vérifier si nous avons assez de SOL pour la transaction
+      if (solBalance < tradeAmountSOL + 0.005) {
+        log(`Solde SOL insuffisant pour effectuer une transaction de ${tradeAmountSOL} SOL. Arrêt du bot.`, 'error');
+        process.exit(1);
+      }
+      
       log('\n--- BUY: SOL -> Token ---');
-      log(`Trade amount: $${adjustedTradeAmountUSD.toFixed(2)} (${adjustedTradeAmountSOL.toFixed(5)} SOL)`, 'info');
-      await executeSwap(SOL_MINT, TOKEN_MINT, adjustedTradeAmountUSD, SLIPPAGE_BPS, adjustedTradeAmountSOL, false);
+      await executeSwap(SOL_MINT, TOKEN_MINT, TRADE_AMOUNT_USD, SLIPPAGE_BPS, tradeAmountSOL, false);
     } else {
       // Sell: TOKEN -> SOL
       // Check current token balance
       const tokenBalance = await getTokenBalance(TOKEN_MINT);
       
-      // If we don't have tokens
+      // Si nous n'avons pas de tokens
       if (tokenBalance <= 0) {
-        log(`No tokens available for sale. Switching to buy.`, 'warning');
+        log(`Aucun token disponible pour la vente. Passage à l'achat.`, 'warning');
         isBuying = true;
         return false;
       }
       
-      // Use the exact same USD amount that was used for the last purchase
-      let sellAmountUSD = lastTradeAmountUSD > 0 ? lastTradeAmountUSD : adjustedTradeAmountUSD;
-      
-      // Determine the equivalent token amount to sell based on the saved USD value
-      log('\n--- SELL: Token -> SOL ---');
-      log(`Target sell amount: $${sellAmountUSD.toFixed(2)} (exact same amount as last purchase)`, 'info');
-      
-      // Get a quote to determine current token price (1 token = X SOL)
-      try {
-        // Get token to SOL exchange rate for a single token
-        const singleTokenInMinUnits = "1000000"; // 1 token in minimum units (assuming 6 decimals)
-        const priceQuote = await axios.get(`${JUPITER_API_BASE}/quote`, {
-          params: {
-            inputMint: TOKEN_MINT,
-            outputMint: SOL_MINT,
-            amount: singleTokenInMinUnits,
-            slippageBps: SLIPPAGE_BPS.toString()
-          }
-        });
-        
-        // Calculate SOL per token
-        const solPerToken = priceQuote.data.outAmount / LAMPORTS_PER_SOL;
-        
-        // Calculate token value in USD
-        const tokenValueUSD = solPerToken * solPriceUSD;
-        
-        // Calculate how many tokens to sell to equal the saved USD amount
-        const tokensToSell = sellAmountUSD / tokenValueUSD;
-        
-        log(`Current token value: 1 token = ${solPerToken.toFixed(8)} SOL = $${tokenValueUSD.toFixed(6)}`, 'info');
-        log(`Selling ${tokensToSell.toFixed(6)} tokens to get ~$${sellAmountUSD.toFixed(2)}`, 'info');
-        
-        // Check if we have enough tokens
-        if (tokenBalance < tokensToSell) {
-          log(`Insufficient token balance. Available: ${tokenBalance}, Required: ${tokensToSell}`, 'warning');
-          // Sell what we have
-          log(`Selling available balance: ${tokenBalance} tokens`, 'warning');
-          await executeSwap(TOKEN_MINT, SOL_MINT, null, SLIPPAGE_BPS, tokenBalance, true);
-        } else {
-          // Sell the planned amount
-          await executeSwap(TOKEN_MINT, SOL_MINT, null, SLIPPAGE_BPS, tokensToSell, true);
-        }
-      } catch (error) {
-        log(`Error getting token price: ${error.message}`, 'error');
-        // Fallback: use lastPurchasedTokenAmount if available
-        if (lastPurchasedTokenAmount > 0) {
-          log(`Fallback: Using last purchased amount for reference`, 'warning');
-          await executeSwap(TOKEN_MINT, SOL_MINT, null, SLIPPAGE_BPS, Math.min(lastPurchasedTokenAmount, tokenBalance), true);
-        } else {
-          log(`Cannot determine appropriate amount to sell, switching to buy`, 'error');
-          isBuying = true;
-          return false;
-        }
+      // Utiliser exactement le même montant de tokens que celui acheté
+      if (lastPurchasedTokenAmount <= 0) {
+        log(`Impossible de déterminer le montant de tokens à vendre. Passage à l'achat.`, 'warning');
+        isBuying = true;
+        return false;
       }
+      
+      log('\n--- SELL: Token -> SOL ---');
+      await executeSwap(TOKEN_MINT, SOL_MINT, null, SLIPPAGE_BPS, lastPurchasedTokenAmount, true);
     }
     
     // Alternate between buy and sell
