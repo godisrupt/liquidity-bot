@@ -63,10 +63,10 @@ TOKEN_MINT=your_token_mint_address
 WALLET_PRIVATE_KEY=your_wallet_private_key
 
 # Trading parameters (with defaults)
-TRADE_AMOUNT_USD=16
-TRADE_INTERVAL=60000
+TRADE_AMOUNT_USD=1
+TRADE_INTERVAL=20000
 SLIPPAGE_BPS=100
-PRIORITY_FEE=2000000
+PRIORITY_FEE=1000000
 
 # Solana configuration
 RPC_ENDPOINT=https://api.mainnet-beta.solana.com
